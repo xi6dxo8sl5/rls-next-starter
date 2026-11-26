@@ -38,7 +38,8 @@ and `notes` tables, enables RLS, adds the policies, and installs the trigger tha
 
 ## Usage
 
-- `GET /api/notes?limit=20` returns the newest notes visible to the caller.
+- `GET /api/notes?limit=20` returns the newest notes visible to the caller, plus a
+  `nextCursor` when more exist; pass it back as `?cursor=<nextCursor>` to continue.
 - `POST /api/notes` with `{"title": "...", "body": "..."}` inserts a note for the signed-in user.
 - The browser client in `src/lib/supabase/client.ts` is for authenticated components and
   optional realtime subscriptions; the server client reads the session cookie.
