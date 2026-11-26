@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { listNotes } from "@/lib/notes/feed";
 import { createClient } from "@/lib/supabase/server";
-
-const MAX_LIMIT = 50;
-const DEFAULT_LIMIT = 20;
 
 type NoteInput = { title: string; body: string };
 
@@ -20,26 +18,19 @@ function parseNote(value: unknown): NoteInput | null {
   return { title: trimmed, body: typeof body === "string" ? body : "" };
 }
 
-function readLimit(request: Request): number {
-  const raw = Number(new URL(request.url).searchParams.get("limit") ?? DEFAULT_LIMIT);
-  if (!Number.isFinite(raw) || raw < 1) return DEFAULT_LIMIT;
-  return Math.min(Math.floor(raw), MAX_LIMIT);
-}
-
 export async function GET(request: Request) {
+  const url = new URL(request.url);
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("notes")
-    .select("id, title, body, created_at, author_id")
-    .order("created_at", { ascending: false })
-    .limit(readLimit(request));
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+  try {
+    const feed = await listNotes(supabase, {
+      cursor: url.searchParams.get("cursor"),
+      limit: url.searchParams.get("limit"),
+    });
+    return NextResponse.json(feed);
+  } catch (error) {
+    return NextResponse.json({ error: (error as Error).message }, { status: 400 });
   }
-
-  return NextResponse.json({ notes: data });
 }
 
 export async function POST(request: Request) {
